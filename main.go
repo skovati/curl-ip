@@ -3,52 +3,23 @@ package main
 import (
     "fmt"
     "net"
-    "net/http"
-    "strings"
+    "github.com/gin-gonic/gin"
 )
 
 func main() {
-    handlerFunc := http.HandlerFunc(handleRequest)
-    http.Handle("/", handlerFunc)
-    http.ListenAndServe(":8000", nil)
+    r := gin.Default()
+    r.GET("/", mainHandler)
+    r.Run(":8000")
 }
 
-func handleRequest(w http.ResponseWriter, r *http.Request) {
-    ip, err := getIP(r)
+func mainHandler(c *gin.Context) {
+    ip, err := net.ResolveTCPAddr("tcp", c.Request.RemoteAddr)
     if err != nil {
-        w.WriteHeader(400)
-        w.Write([]byte("No valid ip"))
-    }
-    w.WriteHeader(200)
-    w.Write([]byte(ip))
-}
-
-func getIP(r *http.Request) (string, error) {
-    //Get IP from the X-REAL-IP header
-    ip := r.Header.Get("X-REAL-IP")
-    netIP := net.ParseIP(ip)
-    if netIP != nil {
-        return ip, nil
-    }
-
-    //Get IP from X-FORWARDED-FOR header
-    ips := r.Header.Get("X-FORWARDED-FOR")
-    splitIps := strings.Split(ips, ",")
-    for _, ip := range splitIps {
-        netIP := net.ParseIP(ip)
-        if netIP != nil {
-            return ip, nil
-        }
-    }
-
-    //Get IP from RemoteAddr
-    ip, _, err := net.SplitHostPort(r.RemoteAddr)
-    if err != nil {
-        return "", err
-    }
-    netIP = net.ParseIP(ip)
-    if netIP != nil {
-        return ip, nil
-    }
-    return "", fmt.Errorf("No valid ip")
+		c.Abort()
+	}
+    cfIP := net.ParseIP(c.Request.Header.Get("CF-Connecting-IP"))
+	if cfIP != nil {
+		ip.IP = cfIP
+	}
+    c.String(200, fmt.Sprintln(ip.IP))
 }
