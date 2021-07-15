@@ -2,24 +2,29 @@ package main
 
 import (
     "fmt"
-    "net"
-    "github.com/gin-gonic/gin"
+    "log"
+    "net/http"
 )
 
 func main() {
-    r := gin.Default()
-    r.GET("/", mainHandler)
-    r.Run(":8000")
+    http.HandleFunc("/", handler)
+    err := http.ListenAndServe(":8080", nil)
+    if err != nil {
+        log.Fatal(err)
+    }
 }
 
-func mainHandler(c *gin.Context) {
-    ip, err := net.ResolveTCPAddr("tcp", c.Request.RemoteAddr)
-    if err != nil {
-		c.Abort()
-	}
-    cfIP := net.ParseIP(c.Request.Header.Get("CF-Connecting-IP"))
-	if cfIP != nil {
-		ip.IP = cfIP
-	}
-    c.String(200, fmt.Sprintln(ip.IP))
+func handler(w http.ResponseWriter, r *http.Request) {
+    fmt.Fprintf(w, getIP(r))
+}
+
+func getIP(r *http.Request) string {
+    ip := r.Header.Get("X-Real-Ip")
+    if ip == "" {
+        ip = r.Header.Get("X-Forwarded-For")
+    }
+    if ip == "" {
+        ip = r.RemoteAddr
+    }
+    return ip
 }

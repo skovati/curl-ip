@@ -1,15 +1,15 @@
-FROM golang:latest
+FROM golang:alpine as build
 
-RUN mkdir /app
-
-ADD . /app
+COPY . /app
 
 WORKDIR /app
 
-RUN go mod download
+RUN CGO_ENABLED=0 GOOS=linux go build -o server .
 
-RUN go build -o server .
+FROM scratch
 
-EXPOSE 8000
+COPY --from=build /app/server /run/server
 
-CMD ["/app/server"]
+EXPOSE 8080
+
+ENTRYPOINT ["/run/server"]
