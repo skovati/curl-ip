@@ -1,0 +1,22 @@
+name: release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build_push:
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - name: Deploy to Cloud Run
+      id: deploy
+      uses: google-github-actions/deploy-cloudrun@main
+      with:
+        service: curl-ip 
+        image: gcr.io/${{ secrets.GCP_PROJECT }}/curl-ip
+        credentials: ${{ secrets.GCP_SA_KEY }}
+
+    - name: Use Output
+      run: curl "${{ steps.deploy.outputs.url }}"
