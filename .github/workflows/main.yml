@@ -15,7 +15,7 @@ jobs:
       uses: google-github-actions/deploy-cloudrun@main
       with:
         service: curl-ip 
-        image: gcr.io/cloud-317800/curl-ip
+        image: gcr.io/skovati-cloud/curl-ip
         credentials: ${{ secrets.GCP_SA_KEY }}
 
     - name: Use Output
